@@ -4,5 +4,5 @@ import com.saitejajanjirala.news_app.models.Result
 
 
 interface NewsRepository {
-    abstract suspend fun getNews() : Result<HeadLine>
+    suspend fun getNews() : Result<HeadLine>
 }

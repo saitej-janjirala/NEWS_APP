@@ -29,7 +29,6 @@ interface ApiService {
                             url(originalUrl.newBuilder()
                                 .addQueryParameter("apiKey",Keys.API_KEY)
                                 .addQueryParameter("country","us").build())
-
                         }.build()
                         return chain.proceed(newRequest)
                     }
