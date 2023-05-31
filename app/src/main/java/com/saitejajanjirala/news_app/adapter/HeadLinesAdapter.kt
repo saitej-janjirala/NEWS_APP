@@ -1,17 +1,15 @@
 package com.saitejajanjirala.news_app.adapter
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.saitejajanjirala.news_app.R
 import com.saitejajanjirala.news_app.databinding.HeadlineItemBinding
+import com.saitejajanjirala.news_app.listeners.OnArticleClickListener
 import com.saitejajanjirala.news_app.models.Article
-import kotlinx.coroutines.NonDisposableHandle
-import kotlinx.coroutines.NonDisposableHandle.parent
 
-class HeadLinesAdapter(private var list : List<Article>, val listener : onHeadLineItemClickListener) : RecyclerView.Adapter<HeadLinesAdapter.HeadLinesViewHolder>() {
+class HeadLinesAdapter(private var list : List<Article>, val listener : OnArticleClickListener) : RecyclerView.Adapter<HeadLinesAdapter.HeadLinesViewHolder>() {
 
     inner class HeadLinesViewHolder(private val binding: HeadlineItemBinding) : RecyclerView.ViewHolder(binding.root){
 
@@ -28,7 +26,7 @@ class HeadLinesAdapter(private var list : List<Article>, val listener : onHeadLi
             binding.root.setOnClickListener {
                 val position = this.adapterPosition
                 if (position != RecyclerView.NO_POSITION) {
-                    listener?.onClicked(article = list.get(position))
+                    listener?.onClicked(article = list[position])
                 }
             }
         }
@@ -48,10 +46,6 @@ class HeadLinesAdapter(private var list : List<Article>, val listener : onHeadLi
             val article = list[position]
             holder.bindData(article)
         }
-    }
-
-    interface  onHeadLineItemClickListener{
-        fun onClicked(article : Article)
     }
 
     fun setData(articles : List<Article>){

@@ -10,11 +10,12 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Query
 
 interface ApiService {
 
     @GET(Keys.HEAD_LINES)
-    suspend fun getHeadLines() : HeadLine?
+    suspend fun getHeadLines(@Query("category") category : String = "") : HeadLine?
 
     companion object{
         fun getInstance(): ApiService {
@@ -28,6 +29,7 @@ interface ApiService {
                         val newRequest=originalRequest.newBuilder().apply {
                             url(originalUrl.newBuilder()
                                 .addQueryParameter("apiKey",Keys.API_KEY)
+                                .addQueryParameter("language","en")
                                 .addQueryParameter("country","us").build())
                         }.build()
                         return chain.proceed(newRequest)

@@ -14,22 +14,28 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.saitejajanjirala.news_app.R
+import com.saitejajanjirala.news_app.adapter.CategoriesAdapter
 import com.saitejajanjirala.news_app.adapter.HeadLinesAdapter
 import com.saitejajanjirala.news_app.databinding.ActivityMainBinding
+import com.saitejajanjirala.news_app.listeners.OnArticleClickListener
+import com.saitejajanjirala.news_app.listeners.OnCategoryClickListener
 import com.saitejajanjirala.news_app.models.Article
-import com.saitejajanjirala.news_app.models.HeadLine
 import com.saitejajanjirala.news_app.models.Result
 import com.saitejajanjirala.news_app.ui.settings.SettingsActivity
 import com.saitejajanjirala.news_app.ui.detail.DetailActivity
+import com.saitejajanjirala.news_app.utils.Helper
 import com.saitejajanjirala.news_app.utils.Keys
 import dagger.hilt.android.AndroidEntryPoint
 
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity(), HeadLinesAdapter.onHeadLineItemClickListener{
+class MainActivity : AppCompatActivity(), OnArticleClickListener,OnCategoryClickListener{
     private lateinit var binding : ActivityMainBinding
-    private lateinit var adapter: HeadLinesAdapter
+    private lateinit var headLinesAdapter: HeadLinesAdapter
+    private lateinit var categoriesAdapter: CategoriesAdapter
+    private lateinit var categoriesList : ArrayList<Pair<String,Boolean>>
     private val mainViewModel : MainViewModel by viewModels()
+    private var catPos = 0;
     companion object{
         const val TAG = "MainActivity"
     }
@@ -40,13 +46,18 @@ class MainActivity : AppCompatActivity(), HeadLinesAdapter.onHeadLineItemClickLi
         setContentView(binding.root)
         binding.apply {
             retryButton.setOnClickListener {
-                fetchData()
+                if(hasInternetConnection()) {
+                    fetchData()
+                }else{
+                    showInternetNotConnectedToast()
+                }
             }
         }
         setUpAdapters()
         setObservers()
         fetchData()
     }
+
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         val inflater = menuInflater
@@ -65,8 +76,11 @@ class MainActivity : AppCompatActivity(), HeadLinesAdapter.onHeadLineItemClickLi
     }
 
     private fun setUpAdapters() {
-        adapter = HeadLinesAdapter(emptyList(),this)
-        binding.recyclerView.adapter = adapter
+        headLinesAdapter = HeadLinesAdapter(emptyList(),this)
+        binding.articlesRecyclerView.adapter = headLinesAdapter
+        categoriesList = Helper.getListOfCategories()
+        categoriesAdapter = CategoriesAdapter(categoriesList,this)
+        binding.categoriesRecyclerView.adapter = categoriesAdapter
     }
 
     private fun setObservers() {
@@ -76,12 +90,12 @@ class MainActivity : AppCompatActivity(), HeadLinesAdapter.onHeadLineItemClickLi
                     is Result.Error -> {
                         binding.progressBar.visibility = View.GONE
                         binding.retryButton.visibility = View.VISIBLE
-                        binding.recyclerView.visibility = View.GONE
+                        binding.articlesRecyclerView.visibility = View.GONE
                     }
                     is Result.Loading -> {
                         binding.progressBar.visibility = View.VISIBLE
                         binding.retryButton.visibility = View.GONE
-                        binding.recyclerView.visibility = View.GONE
+                        binding.articlesRecyclerView.visibility = View.GONE
                         if(!TextUtils.isEmpty(it.message)){
                             Toast.makeText(this@MainActivity, "${it.message}", Toast.LENGTH_SHORT)
                                 .show()
@@ -90,7 +104,7 @@ class MainActivity : AppCompatActivity(), HeadLinesAdapter.onHeadLineItemClickLi
                     is Result.Success -> {
                         binding.progressBar.visibility = View.GONE
                         binding.retryButton.visibility = View.GONE
-                        binding.recyclerView.visibility = View.VISIBLE
+                        binding.articlesRecyclerView.visibility = View.VISIBLE
                         updateRecyclerView(it.data)
                     }
                     else -> Unit
@@ -101,23 +115,21 @@ class MainActivity : AppCompatActivity(), HeadLinesAdapter.onHeadLineItemClickLi
 
     }
 
-    private fun updateRecyclerView(data: HeadLine?) {
+    private fun updateRecyclerView(data: ArrayList<Article>?) {
         data?.let {
-            it.articles?.let {a->
-                adapter.setData(a)
-                adapter.notifyDataSetChanged()
-            }
+            headLinesAdapter.setData(it)
+            headLinesAdapter.notifyDataSetChanged()
         }
-
     }
 
     private fun fetchData() {
-        if(hasInternetConnection()){
-            mainViewModel.fetch()
-        }
-        else{
-            showInternetNotConnectedToast()
-        }
+//        if(hasInternetConnection()){
+//            mainViewModel.fetch()
+//        }
+//        else{
+//            showInternetNotConnectedToast()
+//        }
+        mainViewModel.fetch()
     }
 
     private fun showInternetNotConnectedToast(){
@@ -126,7 +138,6 @@ class MainActivity : AppCompatActivity(), HeadLinesAdapter.onHeadLineItemClickLi
             "Please check your internet connection",
             Toast.LENGTH_SHORT
         ).show()
-        mainViewModel.setToRetry()
     }
     private fun hasInternetConnection(): Boolean {
         val connMgr = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -144,6 +155,27 @@ class MainActivity : AppCompatActivity(), HeadLinesAdapter.onHeadLineItemClickLi
             Toast.makeText(this@MainActivity,"No resources found",Toast.LENGTH_SHORT).show()
         }
 
+    }
+
+    override fun onCategoryClicked(category: Pair<String, Boolean>, position: Int) {
+        if(!category.second && catPos != position){
+            val cat = Pair(categoriesList[catPos].first,false)
+            categoriesList[catPos] = cat
+            categoriesList[position] = Pair(categoriesList[position].first,true)
+            categoriesAdapter.notifyDataSetChanged()
+            if(hasInternetConnection()) {
+                if (position != 0) {
+                    mainViewModel.setCategory(category.first)
+                } else {
+                    mainViewModel.setCategory("")
+                }
+                fetchData()
+            }
+            else{
+                showInternetNotConnectedToast()
+            }
+            catPos = position
+        }
     }
 
 }
